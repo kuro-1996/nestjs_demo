@@ -8,6 +8,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UserSchema } from 'src/auth/schema/user.schema';
 import { jwtConstant } from './guard/jwt.constant';
+import { AuthRepository } from './auth.repository';
 
 
 @Module({
@@ -20,6 +21,6 @@ import { jwtConstant } from './guard/jwt.constant';
     })
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, AuthRepository],
 })
 export class AuthModule { }

@@ -1,22 +1,14 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { InjectModel } from '@nestjs/mongoose';
 
 import * as bcrypt from 'bcrypt'
 
-import { Model } from 'mongoose';
-import { UserDocument } from 'src/auth/schema/user.schema';
 import { AuthRepository } from './auth.repository';
 import { ChangePassword, LoginBody, SignupBody } from './dto';
 
 @Injectable()
 export class AuthService {
-  authRepo: AuthRepository
-
-  constructor(
-    @InjectModel('User') private readonly userModel: Model<UserDocument>,
-    private jwtService: JwtService
-  ) { }
+  constructor(public authRepo: AuthRepository, private jwtService: JwtService) { }
 
   throwError() {
     throw new BadRequestException('Invalid Credentials')
