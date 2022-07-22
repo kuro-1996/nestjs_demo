@@ -1,14 +1,18 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { InjectModel } from "@nestjs/mongoose";
+
+import { Model } from "mongoose";
+
+import { UserDocument } from "./schema/user.schema";
 
 import * as bcrypt from 'bcrypt'
 
-import { AuthRepository } from './auth.repository';
 import { ChangePassword, LoginBody, SignupBody } from './dto';
 
 @Injectable()
 export class AuthService {
-  constructor(public authRepo: AuthRepository, private jwtService: JwtService) { }
+  constructor(@InjectModel('User') private readonly userModel: Model<UserDocument>, private jwtService: JwtService) { }
 
   throwError() {
     throw new BadRequestException('Invalid Credentials')
@@ -17,7 +21,7 @@ export class AuthService {
   async login(body: LoginBody) {
     const { email, password } = body;
 
-    const user = await this.authRepo.findOne(email);
+    const user = await this.userModel.findOne({ email });
 
     // check if email exists
     if (!user) this.throwError()
@@ -43,20 +47,23 @@ export class AuthService {
   async createUser(body: SignupBody) {
     const { email, password } = body
 
-    const user = await this.authRepo.findOne(email);
+    const user = await this.userModel.findOne({ email });
 
     // See if user exits
     if (user) {
       throw new BadRequestException('User already exits')
     }
 
-    const newUser = await this.authRepo.createNewUser(body)
+    const newUser = new this.userModel({
+      ...body,
+      created_at: Date.now()
+    })
 
     const salt = await bcrypt.genSalt(10);
 
     newUser.password = await bcrypt.hash(password, salt);
 
-    const result = await this.authRepo.saveUser(newUser)
+    const result = await newUser.save()
 
     const payload = {
       user: {
@@ -71,13 +78,13 @@ export class AuthService {
   }
 
   async deleteUser(id: string) {
-    await this.authRepo.deleteUser(id)
+    await this.userModel.findByIdAndDelete(id)
   }
 
   async changePassword(body: ChangePassword) {
     const { email, password } = body
 
-    const user = await this.authRepo.findOne(email)
+    const user = await this.userModel.findOne({ email })
 
     // See if user exits
     if (!user) {
@@ -88,7 +95,7 @@ export class AuthService {
 
     const newPassword = await bcrypt.hash(password, salt);
 
-    await this.authRepo.updateUser(user._id, {
+    await this.userModel.findByIdAndUpdate(user._id, {
       password: newPassword
     })
   }
